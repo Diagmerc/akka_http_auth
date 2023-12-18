@@ -1,26 +1,37 @@
 package ru.lozovoi.session;
 
-import akka.http.javadsl.model.headers.BasicHttpCredentials;
-import akka.http.javadsl.model.headers.HttpCredentials;
-import ru.lozovoi.UserMessages.*;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SessionService {
 
     private final static List<Session> sessions = new ArrayList<>();
 
-    public void createSession(String credentials) {
-        sessions.add(new Session(credentials));
+    private final static List<Session> synchronizedSessions = Collections.synchronizedList(sessions);
+
+    public String createSession(String name, String password) {
+        Session session = new Session(name, password);
+        if(!haveToken(session.getToken())){
+            synchronizedSessions.add(session);
+            return "Ok";
+        }
+        System.out.println(countSessions());
+        return "already exists";
     }
 
-    public void deleteSession(String credentials) {
-        sessions.stream().filter(s -> credentials.equals(s.getCredentials()))
-                .findFirst().ifPresent(sessions::remove);
+    public void deleteToken(String token) {
+        Session session = synchronizedSessions.stream().filter(sess -> sess.getToken().equals(token)).findFirst().get();
+        synchronizedSessions.remove(session);
     }
 
-    public HttpCredentials getHttpCredentials(UserMessages.AuthUserMessage authUserMessage) {
-        return BasicHttpCredentials.create(authUserMessage.getUser().getName(), authUserMessage.getUser().getPassword());
+    public int countSessions() {
+        return synchronizedSessions.size();
+    }
+
+    public boolean haveToken(String token) {
+        return synchronizedSessions.stream()
+                .anyMatch(session -> session.getToken()
+                        .equals(token));
     }
 }

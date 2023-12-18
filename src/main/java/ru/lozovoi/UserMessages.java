@@ -44,9 +44,16 @@ public interface UserMessages {
             return userId;
         }
     }
-    class GetAllUsersMessage implements Serializable {
+    class AuthUserMessage implements Serializable {
 
-        public GetAllUsersMessage() {
+        private static final long serialVersionUID = 1L;
+        private final User user;
+        public AuthUserMessage(User user) {
+            this.user = user;
+        }
+
+        public User getUser() {
+            return user;
         }
     }
 
