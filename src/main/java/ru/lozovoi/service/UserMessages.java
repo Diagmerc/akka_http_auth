@@ -1,4 +1,6 @@
-package ru.lozovoi;
+package ru.lozovoi.service;
+
+import ru.lozovoi.entity.User;
 
 import java.io.Serializable;
 
@@ -44,11 +46,10 @@ public interface UserMessages {
             return userId;
         }
     }
-    class AuthUserMessage implements Serializable {
-
+    class LoginUserMessage implements Serializable {
         private static final long serialVersionUID = 1L;
         private final User user;
-        public AuthUserMessage(User user) {
+        public LoginUserMessage(User user) {
             this.user = user;
         }
 
@@ -56,5 +57,4 @@ public interface UserMessages {
             return user;
         }
     }
-
 }

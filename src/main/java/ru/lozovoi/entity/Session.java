@@ -1,4 +1,4 @@
-package ru.lozovoi.session;
+package ru.lozovoi.entity;
 
 import akka.http.javadsl.model.headers.BasicHttpCredentials;
 

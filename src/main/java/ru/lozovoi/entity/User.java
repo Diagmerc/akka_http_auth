@@ -1,4 +1,4 @@
-package ru.lozovoi;
+package ru.lozovoi.entity;
 
 public class User {
 

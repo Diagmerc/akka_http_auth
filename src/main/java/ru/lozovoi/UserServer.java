@@ -8,16 +8,17 @@ import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
 import akka.pattern.PatternsCS;
 import akka.util.Timeout;
-import ru.lozovoi.UserMessages.ActionPerformed;
-import ru.lozovoi.UserMessages.CreateUserMessage;
-import ru.lozovoi.UserMessages.GetUserMessage;
-import ru.lozovoi.session.SessionService;
+import ru.lozovoi.entity.User;
+import ru.lozovoi.service.SessionService;
+import ru.lozovoi.service.UserMessages;
+import ru.lozovoi.service.UserMessages.ActionPerformed;
+import ru.lozovoi.service.UserMessages.CreateUserMessage;
+import ru.lozovoi.service.UserMessages.GetUserMessage;
 import scala.concurrent.duration.Duration;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
@@ -76,63 +77,15 @@ class UserServer extends HttpApp {
     }
 
     private Route login() {
-        UserService userService = new UserService();
-        SessionService sessionService = new SessionService();
-        final Function<Optional<ProvidedCredentials>, Optional<User>> myUserPassAuthenticator =
-                opt -> {
-                    if (opt.isPresent()) {
-                        User user =
-                                new User(opt.get().identifier(), opt.get()
-                                        .verify(userService.getUserByUserName
-                                                (opt.get().identifier()).get().getPassword()) ?
-                                        userService.getUserByUserName(opt.get().identifier()).get().getPassword() : null);
-                        if (user.getPassword() != null) {
-                            String session = sessionService.createSession(user.getName(), user.getPassword());
-                            System.out.println(session);
-                        }
-                        return Optional.of(user);
-                    } else {
-                        return Optional.empty();
-                    }
-                };
-        final Function<User, Boolean> hasUser = user -> userService.getUserByUserName(user.getName())
-                .get().getPassword().equals(user.getPassword());
+        return route(post(() -> entity(Jackson.unmarshaller(User.class), user -> {
+            CompletionStage<ActionPerformed> userLogin = PatternsCS.ask(userActor, new UserMessages.LoginUserMessage(user), timeout)
+                    .thenApply(obj -> (ActionPerformed) obj);
 
-        return authenticateBasic("secure site", myUserPassAuthenticator, user ->
-                path("login", () ->
-                        authorize(() -> hasUser.apply(user), () ->
-                                complete("'" + user.getName() + "' visited" + "credentials =" + sessionService.countSessions())
-                        )
-                )
-        );
+            return onSuccess(() -> userLogin, performed -> {
+                return complete(StatusCodes.OK, performed, Jackson.marshaller());
+            });
+        })));
     }
-
-    //    private Route login(){
-//        UserService userService = new UserService();
-//        final Function<Optional<ProvidedCredentials>, Optional<User>> myUserPassAuthenticator =
-//                opt -> {
-//                    if (opt.isPresent()) {
-//                        return Optional.of(
-//                                new User(opt.get().identifier(), opt.get()
-//                                        .verify(userService.getUserByUserName
-//                                                (opt.get().identifier()).get().getPassword()) ?
-//                                        userService.getUserByUserName(opt.get().identifier()).get().getPassword() : null));
-//                    } else {
-//                        return Optional.empty();
-//                    }
-//                };
-//        final Function<User, Boolean> hasUser = user -> userService.getUserByUserName(user.getName())
-//                .get().getPassword().equals(user.getPassword());
-//
-//        return route(post(() -> entity(Jackson.unmarshaller(User.class), user -> {
-//            CompletionStage<ActionPerformed> authUser = PatternsCS.ask(userActor, new UserMessages.AuthUserMessage(user), timeout)
-//                    .thenApply(obj -> (ActionPerformed) obj);
-//
-//            return onSuccess(() -> authUser, performed -> {
-//                return complete(StatusCodes.OK, performed, Jackson.marshaller());
-//            });
-//        })));
-//    }
     private Route auth() {
         SessionService sessionService = new SessionService();
         return route(path("me", () -> extractCredentials(optCreds -> {

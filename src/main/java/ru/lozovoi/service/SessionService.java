@@ -1,4 +1,6 @@
-package ru.lozovoi.session;
+package ru.lozovoi.service;
+
+import ru.lozovoi.entity.Session;
 
 import java.util.ArrayList;
 import java.util.Collections;
