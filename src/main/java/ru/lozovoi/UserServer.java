@@ -11,7 +11,6 @@ import akka.util.Timeout;
 import ru.lozovoi.entity.User;
 import ru.lozovoi.service.SessionService;
 import ru.lozovoi.service.UserMessages;
-import ru.lozovoi.service.UserMessages.ActionPerformed;
 import ru.lozovoi.service.UserMessages.CreateUserMessage;
 import ru.lozovoi.service.UserMessages.GetUserMessage;
 import scala.concurrent.duration.Duration;
@@ -60,11 +59,12 @@ class UserServer extends HttpApp {
 
     private Route postUser() {
         return route(post(() -> entity(Jackson.unmarshaller(User.class), user -> {
-            CompletionStage<ActionPerformed> userCreated = PatternsCS.ask(userActor, new CreateUserMessage(user), timeout)
-                    .thenApply(obj -> (ActionPerformed) obj);
-
+            CompletionStage<Object> userCreated = PatternsCS.ask(userActor, new CreateUserMessage(user), timeout);
             return onSuccess(() -> userCreated, performed -> {
-                return complete(StatusCodes.OK, performed, Jackson.marshaller());
+                if (performed.equals("session.errors.emailAlreadyRegistered"))
+                    return complete(StatusCodes.UNPROCESSABLE_ENTITY, performed, Jackson.marshaller());
+                else
+                    return complete(StatusCodes.OK, performed, Jackson.marshaller());
             });
         })));
     }
@@ -78,11 +78,12 @@ class UserServer extends HttpApp {
 
     private Route login() {
         return route(path("login", () -> post(() -> entity(Jackson.unmarshaller(User.class), user -> {
-            CompletionStage<ActionPerformed> userLogin = PatternsCS.ask(userActor, new UserMessages.LoginUserMessage(user), timeout)
-                    .thenApply(obj -> (ActionPerformed) obj);
-
+            CompletionStage<Object> userLogin = PatternsCS.ask(userActor, new UserMessages.LoginUserMessage(user), timeout);
             return onSuccess(() -> userLogin, performed -> {
-                return complete(StatusCodes.OK, performed, Jackson.marshaller());
+                if (!performed.toString().equals("bad credentials"))
+                    return complete(StatusCodes.OK);
+                else
+                    return complete(StatusCodes.UNPROCESSABLE_ENTITY, "bad credentials");
             });
         }))));
     }

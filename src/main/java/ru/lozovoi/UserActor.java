@@ -6,12 +6,9 @@ import akka.japi.pf.FI;
 import ru.lozovoi.entity.User;
 import ru.lozovoi.service.SessionService;
 import ru.lozovoi.service.UserMessages;
-import ru.lozovoi.service.UserMessages.ActionPerformed;
 import ru.lozovoi.service.UserMessages.CreateUserMessage;
 import ru.lozovoi.service.UserMessages.GetUserMessage;
 import ru.lozovoi.service.UserService;
-
-import java.io.IOException;
 
 class UserActor extends AbstractActor {
 
@@ -33,13 +30,15 @@ class UserActor extends AbstractActor {
     private FI.UnitApply<CreateUserMessage> handleCreateUser() {
         return createUserMessage -> {
             if (userService.getUserByEmail(createUserMessage.getUser().getEmail()).isPresent()) {
-                throw new IOException("session.errors.emailAlreadyRegistered");
+                sender()
+                        .tell(new String(
+                                "session.errors.emailAlreadyRegistered"), getSelf());
+            } else {
+                userService.createUser(createUserMessage.getUser());
+                sender()
+                        .tell(new String(
+                                ""), getSelf());
             }
-            ;
-            userService.createUser(createUserMessage.getUser());
-            sender()
-                    .tell(new ActionPerformed(
-                            ""), getSelf());
         };
     }
 
@@ -51,18 +50,16 @@ class UserActor extends AbstractActor {
 
     private FI.UnitApply<UserMessages.LoginUserMessage> handleLoginUser() {
         return loginUserMessage -> {
-            ;
-            String loginResult = "";
             User user = loginUserMessage.getUser();
-            if(userService.getUserByUserName(user.getName()).get().getPassword().equals(user.getPassword())){
-                SessionService sessionService = new SessionService();
-                sessionService.createSession(user.getName(), user.getPassword());
-                loginResult = "200";
+            if (userService.getUserByUserName(user.getName()).isPresent()) {
+                if (userService.getUserByUserName(user.getName()).get().getPassword().equals(user.getPassword())) {
+                    SessionService sessionService = new SessionService();
+                    sessionService.createSession(user.getName(), user.getPassword());
+                    sender().tell(userService.getUserByUserName(loginUserMessage.getUser().getName()), getSelf());
+                }
+            } else {
+                sender().tell("bad credentials", getSelf());
             }
-            else{loginResult = "422";}
-            sender()
-                    .tell(new ActionPerformed(
-                            String.format("User %s created.", loginResult)), getSelf());
         };
     }
 }
