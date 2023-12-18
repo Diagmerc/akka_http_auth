@@ -64,7 +64,7 @@ class UserServer extends HttpApp {
                     .thenApply(obj -> (ActionPerformed) obj);
 
             return onSuccess(() -> userCreated, performed -> {
-                return complete(StatusCodes.CREATED, performed, Jackson.marshaller());
+                return complete(StatusCodes.OK, performed, Jackson.marshaller());
             });
         })));
     }
@@ -77,15 +77,16 @@ class UserServer extends HttpApp {
     }
 
     private Route login() {
-        return route(post(() -> entity(Jackson.unmarshaller(User.class), user -> {
+        return route(path("login", () -> post(() -> entity(Jackson.unmarshaller(User.class), user -> {
             CompletionStage<ActionPerformed> userLogin = PatternsCS.ask(userActor, new UserMessages.LoginUserMessage(user), timeout)
                     .thenApply(obj -> (ActionPerformed) obj);
 
             return onSuccess(() -> userLogin, performed -> {
                 return complete(StatusCodes.OK, performed, Jackson.marshaller());
             });
-        })));
+        }))));
     }
+
     private Route auth() {
         SessionService sessionService = new SessionService();
         return route(path("me", () -> extractCredentials(optCreds -> {

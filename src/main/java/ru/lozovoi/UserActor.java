@@ -39,7 +39,7 @@ class UserActor extends AbstractActor {
             userService.createUser(createUserMessage.getUser());
             sender()
                     .tell(new ActionPerformed(
-                            String.format("User %s created.", createUserMessage.getUser().getName())), getSelf());
+                            ""), getSelf());
         };
     }
 

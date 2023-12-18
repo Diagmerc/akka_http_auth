@@ -1,13 +1,11 @@
 package ru.lozovoi.service;
 
-import akka.http.javadsl.server.directives.SecurityDirectives;
 import ru.lozovoi.entity.User;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class UserService {
 
@@ -43,31 +41,5 @@ public class UserService {
 
     public void createUser(User user) {
         synchronizedUsers.add(user);
-    }
-
-    public Function<Optional<SecurityDirectives.ProvidedCredentials>, Optional<User>> getPassAuthenticator() {
-        SessionService sessionService = new SessionService();
-        return
-                opt -> {
-                    if (opt.isPresent()) {
-                        User user =
-                                new User(opt.get().identifier(), opt.get()
-                                        .verify(getUserByUserName
-                                                (opt.get().identifier()).get().getPassword()) ?
-                                        getUserByUserName(opt.get().identifier()).get().getPassword() : null);
-                        if (user.getPassword() != null) {
-                            String session = sessionService.createSession(user.getName(), user.getPassword());
-                            System.out.println(session);
-                        }
-                        return Optional.of(user);
-                    } else {
-                        return Optional.empty();
-                    }
-                };
-    }
-
-    public Function<User, Boolean> hasUser() {
-        return user -> getUserByUserName(user.getName())
-                .get().getPassword().equals(user.getPassword());
     }
 }
