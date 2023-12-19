@@ -30,14 +30,10 @@ class UserActor extends AbstractActor {
     private FI.UnitApply<CreateUserMessage> handleCreateUser() {
         return createUserMessage -> {
             if (userService.getUserByEmail(createUserMessage.getUser().getEmail()).isPresent()) {
-                sender()
-                        .tell(new String(
-                                "session.errors.emailAlreadyRegistered"), getSelf());
+                sender().tell(new String("session.errors.emailAlreadyRegistered"), getSelf());
             } else {
                 userService.createUser(createUserMessage.getUser());
-                sender()
-                        .tell(new String(
-                                ""), getSelf());
+                sender().tell(new String(""), getSelf());
             }
         };
     }
@@ -51,11 +47,11 @@ class UserActor extends AbstractActor {
     private FI.UnitApply<UserMessages.LoginUserMessage> handleLoginUser() {
         return loginUserMessage -> {
             User user = loginUserMessage.getUser();
-            if (userService.getUserByUserName(user.getName()).isPresent()) {
-                if (userService.getUserByUserName(user.getName()).get().getPassword().equals(user.getPassword())) {
+            if (userService.getUserByEmail(user.getEmail()).isPresent()) {
+                if (userService.getUserByEmail(user.getEmail()).get().getPassword().equals(user.getPassword())) {
                     SessionService sessionService = new SessionService();
-                    sessionService.createSession(user.getName(), user.getPassword());
-                    sender().tell(userService.getUserByUserName(loginUserMessage.getUser().getName()), getSelf());
+                    sessionService.createSession(user.getEmail(), user.getPassword());
+                    sender().tell(userService.getUserByEmail(loginUserMessage.getUser().getEmail()), getSelf());
                 }
             } else {
                 sender().tell("bad credentials", getSelf());

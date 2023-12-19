@@ -8,6 +8,7 @@ import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
 import akka.pattern.PatternsCS;
 import akka.util.Timeout;
+import ru.lozovoi.dto.UserTo;
 import ru.lozovoi.entity.User;
 import ru.lozovoi.service.SessionService;
 import ru.lozovoi.service.UserMessages;
@@ -92,11 +93,12 @@ class UserServer extends HttpApp {
         SessionService sessionService = new SessionService();
         return route(path("me", () -> extractCredentials(optCreds -> {
             if (optCreds.isPresent()) {
-                if (sessionService.haveToken(optCreds.get().token())) {
-                    return complete("AuthUser: " + optCreds.get());
-                } else return complete("NotAuthenticate: " + optCreds.get());
+                String token = optCreds.get().token();
+                if (sessionService.haveToken(token)) {
+                    return complete(StatusCodes.OK, new UserTo(token).toString());
+                } else return complete(StatusCodes.UNAUTHORIZED);
             } else {
-                return complete("No credentials");
+                return complete(StatusCodes.UNAUTHORIZED);
             }
         })));
     }
@@ -107,11 +109,9 @@ class UserServer extends HttpApp {
             if (optCreds.isPresent()) {
                 if (sessionService.haveToken(optCreds.get().token())) {
                     sessionService.deleteToken(optCreds.get().token());
-                    return complete("Logout: " + optCreds.get());
-                } else return complete("NotAuthenticate: " + optCreds.get());
-            } else {
-                return complete("No credentials");
+                }
             }
+            return complete(StatusCodes.OK);
         })));
     }
 }

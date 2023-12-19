@@ -1,5 +1,7 @@
 package ru.lozovoi.entity;
 
+import java.time.LocalDateTime;
+
 public class User {
 
     private final Long id;
@@ -10,11 +12,14 @@ public class User {
 
     private final String password;
 
+    private final LocalDateTime registered;
+
     public User() {
         this.name = "";
         this.id = null;
         this.email = "";
         this.password = "";
+        this.registered = LocalDateTime.now();
     }
 
     public User(String name, String password) {
@@ -22,6 +27,7 @@ public class User {
         this.id = null;
         this.email = "";
         this.password = password;
+        this.registered = LocalDateTime.now();
     }
 
     public User(Long id, String name, String email, String password) {
@@ -29,6 +35,7 @@ public class User {
         this.id = id;
         this.email = email;
         this.password = password;
+        this.registered = LocalDateTime.now();
     }
 
     public String getName() {
@@ -45,5 +52,9 @@ public class User {
 
     public String getPassword() {
         return password;
+    }
+
+    public LocalDateTime getRegistered() {
+        return registered;
     }
 }

@@ -7,16 +7,27 @@ import java.util.Objects;
 public class Session {
 
 
-    private String name;
+    private String email;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     private String password;
+    private String token;
 
     public Session(String name, String password) {
-        this.name = name;
+        this.email = name;
         this.password = password;
+        this.token = BasicHttpCredentials.createBasicHttpCredentials(name, password).token();
     }
 
     public String getToken() {
-        return BasicHttpCredentials.createBasicHttpCredentials(name, password).token();
+        return token;
     }
 
     @Override
@@ -24,7 +35,7 @@ public class Session {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Session session = (Session) o;
-        return Objects.equals(name, session.name) && Objects.equals(password, session.password);
+        return Objects.equals(email, session.email) && Objects.equals(password, session.password);
     }
 
     @Override

@@ -5,6 +5,7 @@ import ru.lozovoi.entity.Session;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class SessionService {
 
@@ -35,5 +36,9 @@ public class SessionService {
         return synchronizedSessions.stream()
                 .anyMatch(session -> session.getToken()
                         .equals(token));
+    }
+
+    public Optional<Session> getSession(String token){
+        return sessions.stream().filter(session -> session.getToken().equals(token)).findFirst();
     }
 }

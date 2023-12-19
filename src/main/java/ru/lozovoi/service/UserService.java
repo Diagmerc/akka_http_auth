@@ -14,8 +14,8 @@ public class UserService {
     private final static List<User> synchronizedUsers = Collections.synchronizedList(users);
 
     static {
-        synchronizedUsers.add(new User(1l, "Alice", "email1", "pass"));
-        synchronizedUsers.add(new User(2l, "Bob", "email2", "pass"));
+        synchronizedUsers.add(new User(1l, "Alice", "email1@mail.ru", "pass"));
+        synchronizedUsers.add(new User(2l, "Bob", "email2@mail.ru", "pass"));
     }
 
     public Optional<User> getUser(Long id) {
