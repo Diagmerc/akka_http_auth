@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class UserService {
 
@@ -14,8 +15,8 @@ public class UserService {
     private final static List<User> synchronizedUsers = Collections.synchronizedList(users);
 
     static {
-        synchronizedUsers.add(new User(1l, "Alice", "email1@mail.ru", "pass"));
-        synchronizedUsers.add(new User(2l, "Bob", "email2@mail.ru", "pass"));
+        synchronizedUsers.add(new User("Alice", "email1@mail.ru", "pass"));
+        synchronizedUsers.add(new User("Bob", "email2@mail.ru", "pass"));
     }
 
     public Optional<User> getUser(Long id) {

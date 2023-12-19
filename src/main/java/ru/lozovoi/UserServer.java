@@ -35,12 +35,12 @@ class UserServer extends HttpApp {
 
     @Override
     public Route routes() {
-        return path("register", this::postUser)
+        return route(pathPrefix("api_v1", ()-> path("register", this::postUser)
                 .orElse(auth())
                 .orElse(logout())
                 .orElse(login())
                 .orElse(path(segment("users").slash(longSegment()), id ->
-                        route(getUser(id))));
+                        route(getUser(id))))));
     }
 
     private Route getUser(Long id) {
