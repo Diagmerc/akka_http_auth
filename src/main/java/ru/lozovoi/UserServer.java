@@ -8,15 +8,17 @@ import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
 import akka.pattern.PatternsCS;
 import akka.util.Timeout;
-import ru.lozovoi.UserMessages.ActionPerformed;
-import ru.lozovoi.UserMessages.CreateUserMessage;
-import ru.lozovoi.UserMessages.GetUserMessage;
+import ru.lozovoi.dto.UserTo;
+import ru.lozovoi.entity.User;
+import ru.lozovoi.service.SessionService;
+import ru.lozovoi.service.UserMessages;
+import ru.lozovoi.service.UserMessages.CreateUserMessage;
+import ru.lozovoi.service.UserMessages.GetUserMessage;
 import scala.concurrent.duration.Duration;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
@@ -33,11 +35,12 @@ class UserServer extends HttpApp {
 
     @Override
     public Route routes() {
-        return path("register", this::postUser)
-                .orElse(login())
+        return route(pathPrefix("api_v1", ()-> path("register", this::postUser)
                 .orElse(auth())
+                .orElse(logout())
+                .orElse(login())
                 .orElse(path(segment("users").slash(longSegment()), id ->
-                        route(getUser(id))));
+                        route(getUser(id))))));
     }
 
     private Route getUser(Long id) {
@@ -57,11 +60,12 @@ class UserServer extends HttpApp {
 
     private Route postUser() {
         return route(post(() -> entity(Jackson.unmarshaller(User.class), user -> {
-            CompletionStage<ActionPerformed> userCreated = PatternsCS.ask(userActor, new CreateUserMessage(user), timeout)
-                    .thenApply(obj -> (ActionPerformed) obj);
-
+            CompletionStage<Object> userCreated = PatternsCS.ask(userActor, new CreateUserMessage(user), timeout);
             return onSuccess(() -> userCreated, performed -> {
-                return complete(StatusCodes.CREATED, performed, Jackson.marshaller());
+                if (performed.equals("session.errors.emailAlreadyRegistered"))
+                    return complete(StatusCodes.UNPROCESSABLE_ENTITY, performed, Jackson.marshaller());
+                else
+                    return complete(StatusCodes.OK, performed, Jackson.marshaller());
             });
         })));
     }
@@ -73,47 +77,41 @@ class UserServer extends HttpApp {
         server.startServer("localhost", 8080, system);
     }
 
-    private Route login(){
-        UserService userService = new UserService();
-        final Function<Optional<ProvidedCredentials>, Optional<User>> myUserPassAuthenticator =
-                opt -> {
-                    if (opt.isPresent()) {
-                        return Optional.of(
-                                new User(opt.get().identifier(), opt.get()
-                                        .verify(userService.getUserByUserName
-                                                (opt.get().identifier()).get().getPassword()) ?
-                                        userService.getUserByUserName(opt.get().identifier()).get().getPassword() : null));
-                    } else {
-                        return Optional.empty();
-                    }
-                };
-        final Function<User, Boolean> hasUser = user -> userService.getUserByUserName(user.getName())
-                .get().getPassword().equals(user.getPassword());
-
-        return authenticateBasic("secure site", myUserPassAuthenticator, user ->
-                path("login", () ->
-                        authorize(() -> hasUser.apply(user), () ->
-                                complete("'" + user.getName() +"' visited")
-                        )
-                )
-        );
+    private Route login() {
+        return route(path("login", () -> post(() -> entity(Jackson.unmarshaller(User.class), user -> {
+            CompletionStage<Object> userLogin = PatternsCS.ask(userActor, new UserMessages.LoginUserMessage(user), timeout);
+            return onSuccess(() -> userLogin, performed -> {
+                if (!performed.toString().equals("bad credentials"))
+                    return complete(StatusCodes.OK);
+                else
+                    return complete(StatusCodes.UNPROCESSABLE_ENTITY, "bad credentials");
+            });
+        }))));
     }
+
     private Route auth() {
-        UserService userService = new UserService();
-        final Function<Optional<ProvidedCredentials>, Optional<User>> myUser =
-                opt -> {
-                    if (opt.isPresent()) {
-                        Optional<User> user = Optional.of(userService.getUserByEmail(opt.get().identifier()).get());
-                        return user;
-                    } else {
-                        return Optional.empty();
-                    }
-                };
-        return
-                route(path("me", () ->
-                        authenticateBasic("secure site", myUser, userName ->
-                                complete("The user is '" + userName.getName() + "'" + userName.getEmail())
-                        )
-                ));
+        SessionService sessionService = new SessionService();
+        return route(path("me", () -> extractCredentials(optCreds -> {
+            if (optCreds.isPresent()) {
+                String token = optCreds.get().token();
+                if (sessionService.haveToken(token)) {
+                    return complete(StatusCodes.OK, new UserTo(token).toString());
+                } else return complete(StatusCodes.UNAUTHORIZED);
+            } else {
+                return complete(StatusCodes.UNAUTHORIZED);
+            }
+        })));
+    }
+
+    private Route logout() {
+        SessionService sessionService = new SessionService();
+        return route(path("logout", () -> extractCredentials(optCreds -> {
+            if (optCreds.isPresent()) {
+                if (sessionService.haveToken(optCreds.get().token())) {
+                    sessionService.deleteToken(optCreds.get().token());
+                }
+            }
+            return complete(StatusCodes.OK);
+        })));
     }
 }

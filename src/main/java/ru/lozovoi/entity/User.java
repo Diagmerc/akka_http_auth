@@ -1,8 +1,8 @@
-package ru.lozovoi;
+package ru.lozovoi.entity;
 
-public class User {
+import java.time.LocalDateTime;
 
-    private final Long id;
+public class User extends BaseEntity{
 
     private final String name;
 
@@ -10,33 +10,31 @@ public class User {
 
     private final String password;
 
+    private final LocalDateTime registered;
+
     public User() {
         this.name = "";
-        this.id = null;
         this.email = "";
         this.password = "";
+        this.registered = LocalDateTime.now();
     }
 
     public User(String name, String password) {
         this.name = name;
-        this.id = null;
         this.email = "";
         this.password = password;
+        this.registered = LocalDateTime.now();
     }
 
-    public User(Long id, String name, String email, String password) {
+    public User(String name, String email, String password) {
         this.name = name;
-        this.id = id;
         this.email = email;
         this.password = password;
+        this.registered = LocalDateTime.now();
     }
 
     public String getName() {
         return name;
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public String getEmail() {
@@ -45,5 +43,9 @@ public class User {
 
     public String getPassword() {
         return password;
+    }
+
+    public LocalDateTime getRegistered() {
+        return registered;
     }
 }
