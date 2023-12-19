@@ -19,9 +19,9 @@ public class UserServerTest extends JUnitRouteTest {
     public void testLogin() {
 
         String user = "{\"name\": \"Vasya\", \"email\": \"vasya@mail.ru\", \"password\": \"123\"}";
-        HttpRequest register = HttpRequest.POST("/register")
+        HttpRequest register = HttpRequest.POST("/api_v1/register")
                 .withEntity(ContentTypes.APPLICATION_JSON, user);
-        HttpRequest login = HttpRequest.POST("/login")
+        HttpRequest login = HttpRequest.POST("/api_v1/login")
                 .withEntity(ContentTypes.APPLICATION_JSON, user);
 
         appRoute.run(register)
@@ -34,7 +34,7 @@ public class UserServerTest extends JUnitRouteTest {
     public void testNotRegisteredLogin() {
 
         String user = "{\"email\": \"vasy@mail.ru\", \"password\": \"123\"}";
-        HttpRequest login = HttpRequest.POST("/login")
+        HttpRequest login = HttpRequest.POST("/api_v1/login")
                 .withEntity(ContentTypes.APPLICATION_JSON, user);
 
         appRoute.run(login)
@@ -45,10 +45,10 @@ public class UserServerTest extends JUnitRouteTest {
     public void testGetLoginUser() {
         String user = "{\"email\": \"email1@mail.ru\", \"password\": \"pass\"}";
         BasicHttpCredentials pass = BasicHttpCredentials.createBasicHttpCredentials("email1@mail.ru", "pass");
-        HttpRequest login = HttpRequest.POST("/login")
+        HttpRequest login = HttpRequest.POST("/api_v1/login")
                 .withEntity(ContentTypes.APPLICATION_JSON, user);
 
-        HttpRequest me = HttpRequest.GET("/me").addCredentials(pass);
+        HttpRequest me = HttpRequest.GET("/api_v1/me").addCredentials(pass);
 
         appRoute.run(login)
                 .assertStatusCode(StatusCodes.OK);
@@ -61,7 +61,7 @@ public class UserServerTest extends JUnitRouteTest {
     public void testGetNotLoginUser() {
 
         String user = "{\"email\": \"email1@mail.ru\", \"password\": \"pass\"}";
-        HttpRequest me = HttpRequest.POST("/me")
+        HttpRequest me = HttpRequest.POST("/api_v1/me")
                 .withEntity(ContentTypes.APPLICATION_JSON, user);
 
         appRoute.run(me)
